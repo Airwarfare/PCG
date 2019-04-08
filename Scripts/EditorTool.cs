@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Newtonsoft.Json;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -12,6 +13,8 @@ public class EditorTool : Editor
     RaycastHit hit;
     public static Vector3 lastVector;
     public static bool enable = false;
+    public static GameObject currentSelect;
+    public static List<ModelData> models = new List<ModelData>();
 
     static EditorTool()
     {
@@ -31,7 +34,7 @@ public class EditorTool : Editor
                 Handles.DotCap(1, hit.point, hit.transform.rotation, 0.01f);
                 //Get Nearest Vertices
 
-                Mesh mesh = hit.collider.gameObject.GetComponent<MeshFilter>().mesh;
+                Mesh mesh = hit.collider.gameObject.GetComponent<MeshFilter>().sharedMesh;
                 float dist = float.MaxValue;
                 vert = mesh.vertices[0];
                 mesh.vertices.ToList().ForEach(x =>
@@ -59,13 +62,13 @@ public class EditorTool : Editor
                 case EventType.KeyDown:
                     break;
                 case EventType.MouseDown:
-                    if (e.button == 0)
+                    if (e.button == 0 && e.alt)
                     {
                         lastVector = vert;
-                    }
+                        currentSelect = hit.collider.gameObject;
+                    }     
                     break;
             }
-
             SceneView.RepaintAll();
         }
     }
@@ -73,6 +76,37 @@ public class EditorTool : Editor
     [MenuItem("Tools/Enable")]
     static void Enable()
     {
-        enable = true;
+        enable = !enable;
+        SceneView.RepaintAll();
     }
+    
+    [MenuItem("Tools/Save")]
+    static void Save()
+    {
+        string json = JsonConvert.SerializeObject(new ModelData { Vector = new VectorWrap { x = lastVector.x, y = lastVector.y, z = lastVector.z }, GameObjectName = currentSelect.name }, Formatting.Indented);
+        Debug.Log(json);
+    }
+}
+
+public struct ModelData
+{
+    public VectorWrap Vector { get; set; }
+    public string GameObjectName { get; set; }
+}
+
+public struct VectorWrap
+{
+    public float x, y, z;
+}
+
+public enum ModelWeaponTypes
+{
+    Sword,
+    Bow,
+    Staff
+}
+
+public enum ModelPartTypes
+{
+
 }
