@@ -20,7 +20,6 @@ public class EditorTool : Editor
     static EditorTool()
     {
         //EditorApplication.update += Update;
-        Load();
     }
 
     void OnSceneGUI()
@@ -68,7 +67,18 @@ public class EditorTool : Editor
                     {
                         lastVector = vert;
                         currentSelect = hit.collider.gameObject;
-                    }     
+                    } else if(e.button == 0)
+                    {
+                        if(models.Any(x => x.GameObjectName == hit.collider.gameObject.name))
+                        {
+                            ModelData model = models.Where(x => x.GameObjectName == hit.collider.gameObject.name).FirstOrDefault();
+                            if (currentSelect != GameObject.Find(model.GameObjectName))
+                            {
+                                lastVector = new Vector3(model.Vector.x, model.Vector.y, model.Vector.z);
+                                currentSelect = GameObject.Find(model.GameObjectName);
+                            }
+                        }
+                    }
                     break;
             }
             SceneView.RepaintAll();
@@ -79,12 +89,17 @@ public class EditorTool : Editor
     static void Enable()
     {
         enable = !enable;
+        Load();
         SceneView.RepaintAll();
     }
 
     public static void Load()
     {
-        
+        using (StreamReader file = File.OpenText(Application.dataPath + "/data.json"))
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            models = (List<ModelData>)serializer.Deserialize(file, typeof(List<ModelData>));
+        }
     }
     
     [MenuItem("Tools/Save")]
@@ -101,7 +116,16 @@ public class EditorTool : Editor
     [MenuItem("Tools/Save Model Data")]
     static void SaveModelData()
     {
-        models.Add(new ModelData { Vector = new VectorWrap { x = lastVector.x, y = lastVector.y, z = lastVector.z }, GameObjectName = currentSelect.name });
+        ModelData md = new ModelData { Vector = new VectorWrap { x = lastVector.x, y = lastVector.y, z = lastVector.z }, GameObjectName = currentSelect.name };
+        int i = models.FindIndex(x => x.GameObjectName == md.GameObjectName);
+        if(i != -1)
+        {
+            models[i] = md;
+        }
+        else
+        {
+            models.Add(md);
+        }
     }
 }
 
@@ -109,11 +133,38 @@ public struct ModelData
 {
     public VectorWrap Vector { get; set; }
     public string GameObjectName { get; set; }
+
+    public override string ToString()
+    {
+        return "Vector: " + Vector.ToString() + "\nName: " + GameObjectName.ToString();
+    }
+
+    public static bool operator ==(ModelData m1, ModelData m2)
+    {
+        if(m1.GameObjectName == m2.GameObjectName && m1.ToVector3() == m2.ToVector3()) { return true; }
+        return false;
+    }
+
+    public static bool operator !=(ModelData m1, ModelData m2)
+    {
+        if (m1.GameObjectName != m2.GameObjectName || m1.ToVector3() != m2.ToVector3()) { return true; }
+        return false;
+    }
+
+    public Vector3 ToVector3()
+    {
+        return new Vector3(Vector.x, Vector.y, Vector.z);
+    }
 }
 
 public struct VectorWrap
 {
     public float x, y, z;
+
+    public override string ToString()
+    {
+        return string.Format("[{0}, {1}, {2}]", x, y, z);
+    }
 }
 
 public enum ModelWeaponTypes
