@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -19,6 +20,7 @@ public class EditorTool : Editor
     static EditorTool()
     {
         //EditorApplication.update += Update;
+        Load();
     }
 
     void OnSceneGUI()
@@ -79,12 +81,27 @@ public class EditorTool : Editor
         enable = !enable;
         SceneView.RepaintAll();
     }
+
+    public static void Load()
+    {
+        
+    }
     
     [MenuItem("Tools/Save")]
     static void Save()
     {
-        string json = JsonConvert.SerializeObject(new ModelData { Vector = new VectorWrap { x = lastVector.x, y = lastVector.y, z = lastVector.z }, GameObjectName = currentSelect.name }, Formatting.Indented);
-        Debug.Log(json);
+        string json = JsonConvert.SerializeObject(models.ToArray(), Formatting.Indented);
+        using (StreamWriter file = File.CreateText(Application.dataPath + "/data.json"))
+        {
+            JsonSerializer serializer = new JsonSerializer();
+            serializer.Serialize(file, models.ToArray());
+        }
+    }
+
+    [MenuItem("Tools/Save Model Data")]
+    static void SaveModelData()
+    {
+        models.Add(new ModelData { Vector = new VectorWrap { x = lastVector.x, y = lastVector.y, z = lastVector.z }, GameObjectName = currentSelect.name });
     }
 }
 
@@ -108,5 +125,8 @@ public enum ModelWeaponTypes
 
 public enum ModelPartTypes
 {
+    Body,
+    Core,
+    Accesory,
 
 }

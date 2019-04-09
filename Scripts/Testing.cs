@@ -12,7 +12,6 @@ public class Testing : MonoBehaviour
     {
         if (mesh == null && gameObject != null)
         {
-            mesh = gameObject.GetComponent<MeshFilter>().mesh;
         }
         mesh.vertices.ToList().ForEach(x => Debug.Log(x));
     }
